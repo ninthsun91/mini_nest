@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SigninUserDto } from './dto/signinData.dto';
@@ -16,15 +16,15 @@ export class UsersService {
         return this.usersRepository.save(signupData);
     }
 
-    async signin(signinData: SigninUserDto): Promise<string> {
+    async signin(signinData: SigninUserDto): Promise<User> {
         const { username, password } = signinData;
 
         const user = await this.usersRepository.findOneBy({ username });
         if (password !== user.password) {
-            throw new Error('INCORRECT PASSWORD');
+            throw new HttpException('INCORRECT PASSWORD', HttpStatus.BAD_REQUEST);
         }
 
-        return 'LOGIN SUCCESS';
+        return user;
     }
 
     async findAll(): Promise<User[]> {
@@ -37,7 +37,13 @@ export class UsersService {
         return await this.usersRepository.findOneBy({ userId });
     }
 
-    async remove(userId: string): Promise<void> {
-        await this.usersRepository.delete(userId);
+    async updateNickname(userId: number, nickname: string): Promise<Boolean> {
+        const { affected } = await this.usersRepository.update({ userId }, { nickname });
+        return affected > 0 ? true : false;
+    }
+
+    async remove(userId: number): Promise<Boolean> {
+        const { affected } = await this.usersRepository.delete(userId);
+        return affected > 0 ? true : false;
     }
 }
